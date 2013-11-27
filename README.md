@@ -1,4 +1,3 @@
 bayou
 =====
-
-Bayou
+This is Bayou, weakly consisten replication.
