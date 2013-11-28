@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.sun.corba.se.pept.transport.Acceptor;
+import bayou.types.PlayListOperation;
 
 public class Env {
 	Map<ProcessId, Process> procs = new HashMap<ProcessId, Process>();
@@ -111,18 +111,10 @@ public class Env {
 						} else if (type.equals(UserCommandTypes.DELPARTITION))  {
 							env.blackList.clear();
 						} else if(type.equals(UserCommandTypes.ADDBLACKLIST)) {
-							String in = input.substring(input.indexOf(":")+1);
-							String p[] = in.split(" ");
-							System.out.println("Adding to blacklist "+p[0]+" "+p[1]);
-							env.blackList.add(new BlackList(p[0],p[1]));
+							
 							
 						} else if (type.equals(UserCommandTypes.COMMAND)) { 
-							String command = input.substring(input.indexOf(":")+1);
-							System.out.println(command);
-							for (int r=0;r<env.replicas.length;r++) {
-							sendMessage(env.replicas[r],
-									new RequestMessage(this.me, new Command(this.me, 0,command)));
-							}
+							
 						}
 					}
 				}
@@ -154,7 +146,7 @@ public class Env {
 						Thread.sleep(sleepTime);
 					} else {
 						for (int r = 0; r < nReplicas; r++) {
-							sendMessage(env.replicas.get(r),new RequestMessage(pid, new Command(pid, 0,line)));
+							sendMessage(env.replicas.get(r),new RequestMessage(this.me, env.replicas.get(r), line));
 						}	
 					}
 				}
@@ -172,15 +164,15 @@ public class Env {
 			repl.setReplicas(replicas);
 		}
 		if (numClients == 1) {
-			for (int i = 1; i < 10; i++) {
+			for (int i = 1; i < 2; i++) {
 				ProcessId pid = new ProcessId("client:" + i);
-				BankOperation op = new BankOperation();
-				op.op = BankOperation.OperationTypes.ADDACCOUNT.value();
-				op.holderName = "Client "+i;
-				op.amount = 500;
-				for (int r = 0; r < nReplicas; r++) {
-					sendMessage(replicas[r],
-							new RequestMessage(pid, new Command(pid, 0, op.serialize())));
+				PlayListOperation op = new PlayListOperation();
+				op.op = PlayListOperation.OperationTypes.ADD.value();
+				op.name = "Blah"+i;
+				op.url = "http://blah";
+				for (int r = 0; r < 1; r++) {
+					sendMessage(replicas.get(r),
+							new RequestMessage(pid, replicas.get(r), op.serialize()));
 				}
 			}
 		} else { 
@@ -191,7 +183,7 @@ public class Env {
 				//((Thread)c).start();
 			}
 		}
-		UserReader ucmd = new UserReader(this,new ProcessId("usercmd:"));
+		//UserReader ucmd = new UserReader(this,new ProcessId("usercmd:"));
 	}
 
 	public static void main(String[] args){

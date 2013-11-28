@@ -1,7 +1,9 @@
 package bayou.entities;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import bayou.types.PlayListOperation;
 
@@ -11,7 +13,7 @@ public class BayouMessage {
 }
 class RequestMessage extends BayouMessage {
 	public String op;
-	public RequestMessage(String op) { 
+	public RequestMessage(ProcessId src, ProcessId dest, String op) { 
 		super();
 		this.op = op;
 	}
@@ -22,17 +24,25 @@ class ResponseMessage extends BayouMessage {
 		super();
 	}	
 }
-class EntropyInitMessage extends BayouMessage { 
-	public List<PlayListOperation> ops;
+class EntropyRequestMessage extends BayouMessage { 
+	public Map<ProcessId, Long> versionVector;
+	public EntropyRequestMessage() { 
+		super();
+		versionVector = new HashMap<ProcessId,Long>();
+	}
+}
+class EntropyInitMessage extends BayouMessage {
+	public ProcessId senderReplica;
 	public EntropyInitMessage() { 
 		super();
-		ops = new ArrayList<PlayListOperation>();
 	}
 }
 class EntropyResponseMessage extends BayouMessage { 
-	public List<PlayListOperation> ops;
+	PlayListOperation op;
 	public EntropyResponseMessage() { 
 		super(); 
-		ops = new ArrayList<PlayListOperation>();
+	}
+	public void setOp(PlayListOperation cp) { 
+		this.op = new PlayListOperation(cp);
 	}
 }

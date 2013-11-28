@@ -2,6 +2,8 @@ package bayou.types;
 
 import java.util.UUID;
 
+import bayou.entities.ProcessId;
+
 import com.google.gson.Gson;
 
 public class PlayListOperation {
@@ -16,11 +18,21 @@ public class PlayListOperation {
 		}
 	}
 	public String op;
-	public String name; 
+	public String name;
+	public ProcessId execServer;
+	public long execStamp;
 	public String url;
 	public String id;
 	public PlayListOperation() { 
 		id = UUID.randomUUID().toString();
+	}
+	public PlayListOperation(PlayListOperation copy) { 
+		this.op = copy.op;
+		this.name = copy.name; 
+		this.execServer = copy.execServer; 
+		this.execStamp = copy.execStamp; 
+		this.url = copy.url; 
+		this.id = copy.id;
 	}
 	public void operate(PlayList playList) { 
 		if (op.equalsIgnoreCase(OperationTypes.ADD.value())) {
