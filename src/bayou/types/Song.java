@@ -6,4 +6,9 @@ class Song {
 		this.name = name; 
 		this.url = url;
 	}
+	public String toString() { 
+		String ret = "";
+		ret+= this.name +" "+ this.url;
+		return ret;
+	}
 }

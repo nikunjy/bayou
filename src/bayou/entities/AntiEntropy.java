@@ -1,5 +1,6 @@
 package bayou.entities;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -10,13 +11,22 @@ public class AntiEntropy extends Process {
 	ProcessId receiver;
 	ProcessId senderReplica;
 	public List<PlayListOperation> ops;
+	public List<PlayListOperation> commitedOps;
 	public long commitSeq;
-	public AntiEntropy(Env env, ProcessId me, ProcessId senderReplica, ProcessId receiver, List<PlayListOperation> ops, long commitSeq) {
+	public AntiEntropy(Env env, ProcessId me, ProcessId senderReplica, ProcessId receiver, List<PlayListOperation> ops, List<PlayListOperation> commitedOps, 
+			long commitSeq) {
 		this.env = env;
 		this.me = me;
 		this.receiver = receiver;
 		this.senderReplica = senderReplica;
-		this.ops = ops;
+		this.ops = new ArrayList<PlayListOperation>(); 
+		this.commitedOps = new ArrayList<PlayListOperation>();
+		for (PlayListOperation op : ops) { 
+			this.ops.add(new PlayListOperation(op));
+		}
+		for (PlayListOperation op : commitedOps) { 
+			this.commitedOps.add(new PlayListOperation(op));
+		}
 		this.commitSeq = commitSeq;
 		env.addProc(me, this);
 	}
@@ -26,24 +36,30 @@ public class AntiEntropy extends Process {
 		initMessage.senderReplica = senderReplica;
 		initMessage.src = this.me; 
 		initMessage.dest = receiver;
+		//System.out.println("Sending anti entropy from "+this.me+" "+receiver);
 		sendMessage(receiver, initMessage);
+		
 		BayouMessage msg = getNextMessage();
 		EntropyRequestMessage message = (EntropyRequestMessage)msg;
 		Map<ProcessId, Long> versionVector = message.versionVector;
 		if (msg instanceof EntropyRequestMessage) {
 			EntropyRequestMessage entropyMessage = ((EntropyRequestMessage) msg);
+			System.out.println("Doing anti entropy "+this.me+" with "+msg.src + " "+entropyMessage.commitSeq +" "+this.commitSeq);
+			for ( PlayListOperation op : ops) { 
+				System.out.println(this.me+" "+op.serialize());
+			}
 			if (entropyMessage.commitSeq < this.commitSeq) { 
-				Map<Long, PlayListOperation> commitedOps = new TreeMap<Long, PlayListOperation>();
-				for (PlayListOperation op : ops) { 
+				Map<Long, PlayListOperation> sortedCommits = new TreeMap<Long, PlayListOperation>();
+				for (PlayListOperation op : commitedOps ) { 
 					if (op.commitNumber != -1) { 
-						commitedOps.put(op.commitNumber, op);
+						sortedCommits.put(op.commitNumber, op);
 					}
 				}
-				for ( Long key : commitedOps.keySet()) { 
+				for ( Long key : sortedCommits.keySet()) { 
 					if ( key > entropyMessage.commitSeq) {
-						PlayListOperation op = commitedOps.get(key);
+						PlayListOperation op = sortedCommits.get(key);
 						if ( op.execStamp <=  versionVector.get(op.execServer)) {
-							CommitResponseMessage commitMessage = new CommitResponseMessage(commitedOps.get(key));
+							CommitResponseMessage commitMessage = new CommitResponseMessage(sortedCommits.get(key));
 							commitMessage.src = this.me; 
 							commitMessage.dest = msg.src;
 							sendMessage(msg.src, commitMessage);
@@ -58,7 +74,8 @@ public class AntiEntropy extends Process {
 				}	
 			}
 			for ( PlayListOperation op : ops) { 
-				if (op.isWriteOp() && op.commitNumber == -1) {
+				if (op.isWriteOp()) {
+					
 					if (!versionVector.containsKey(op.execServer) || versionVector.get(op.execServer) < op.execStamp) { 
 						EntropyResponseMessage resp = new EntropyResponseMessage(); 
 						resp.dest = message.src;

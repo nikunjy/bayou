@@ -31,4 +31,11 @@ public class PlayList {
 			break;
 		}
 	}
+	public String toString() { 
+		String ret = "";
+		for (Song song : songs) { 
+			ret += song.toString();
+		}
+		return ret;
+	}
 }

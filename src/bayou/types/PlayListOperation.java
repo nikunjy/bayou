@@ -22,11 +22,13 @@ public class PlayListOperation {
 	public ProcessId execServer;
 	public long execStamp;
 	public long commitNumber;
+	public boolean finalExecuted;
 	public String url;
 	public String id;
 	public PlayListOperation() { 
 		id = UUID.randomUUID().toString();
 		commitNumber = -1;
+		finalExecuted = false;
 	}
 	public PlayListOperation(PlayListOperation copy) { 
 		this.op = copy.op;
@@ -36,6 +38,7 @@ public class PlayListOperation {
 		this.url = copy.url; 
 		this.id = copy.id;
 		this.commitNumber = copy.commitNumber;
+		this.finalExecuted = copy.finalExecuted;
 	}
 	public void operate(PlayList playList) { 
 		if (op.equalsIgnoreCase(OperationTypes.ADD.value())) {

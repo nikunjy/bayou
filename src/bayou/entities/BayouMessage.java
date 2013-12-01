@@ -42,7 +42,14 @@ class PrintLogRequestMessage extends BayouMessage {
 		}
 	}
 }
-
+class UserEntropyInitMessage extends BayouMessage { 
+	public ProcessId receiver;  
+	public UserEntropyInitMessage(ProcessId receiver) {
+		super();
+		this.receiver = receiver;
+		
+	}
+}
 class CommitResponseMessage extends BayouMessage { 
 	public PlayListOperation op;
 	public long commitNumber;

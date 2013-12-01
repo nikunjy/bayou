@@ -79,7 +79,8 @@ public class Env {
 		}
 	}
 	public enum UserCommandTypes {
-		PRINTLOG("printLog:"),KILLPROCESS("killProcess:"),DELPARTITION("deletePartition:"),ADDBLACKLIST("add:"),COMMAND("command:");
+		PRINTLOG("printLog:"),INITENTROPY("initEntropy:"),
+		KILLPROCESS("killProcess:"),DELPARTITION("deletePartition:"),ADDBLACKLIST("add:"),COMMAND("command:");
 		public String message;
 		public String value() { 
 			return message;
@@ -111,7 +112,15 @@ public class Env {
 							int printLogLevel = Integer.parseInt(subs[1]);
 							PrintLogRequestMessage logMessage = new PrintLogRequestMessage(printLogLevel); 
 							sendMessage(replicas.get(replicaId), logMessage);
-						} else if (type.equals(UserCommandTypes.KILLPROCESS)) {
+						} else if (type.equals(UserCommandTypes.INITENTROPY)) {
+							String s = input.substring(input.indexOf(":")+1);
+							String[] subs = s.split(",");
+							ProcessId sender = replicas.get(Integer.parseInt(subs[0]));
+							ProcessId receiver = replicas.get(Integer.parseInt(subs[1]));
+							UserEntropyInitMessage initRequest = new UserEntropyInitMessage(receiver);
+							initRequest.dest = sender;
+							sendMessage(sender, initRequest);
+						}else if (type.equals(UserCommandTypes.KILLPROCESS)) {
 							String id = input.substring(input.indexOf(":")+1);
 							System.out.println(id);
 							env.removeProc(new ProcessId(id));
@@ -174,7 +183,7 @@ public class Env {
 			repl.setReplicas(replicas);
 		}
 		if (numClients == 1) {
-			for (int i = 1; i < 10; i++) {
+			for (int i = 1; i < 3; i++) {
 				ProcessId pid = new ProcessId("client:" + i);
 				PlayListOperation op = new PlayListOperation();
 				op.op = PlayListOperation.OperationTypes.ADD.value();

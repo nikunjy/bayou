@@ -3,10 +3,9 @@ package bayou.entities;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import bayou.types.PlayList;
 import bayou.types.PlayListOperation;
@@ -16,10 +15,12 @@ public class Replica extends Process {
 	List<ProcessId> replicas;
 	ProcessId primary;
 	PlayList playList;
+	PlayList commitedPlayList;
 	List<PlayListOperation> ops;
+	List<PlayListOperation> commitedOps;
 	Map<String, PlayListOperation> uniqueCopies;
 	PrintWriter writer;
-	int entropyThreshold = 2;
+	int entropyThreshold = 1;
 	boolean isPrimary;
 	long commitSeq;
 	Map<ProcessId, Long> versionVector;
@@ -29,6 +30,7 @@ public class Replica extends Process {
 		this.primary = primary;
 		replicas = new ArrayList<ProcessId>();
 		ops = new ArrayList<PlayListOperation>();
+		commitedOps = new ArrayList<PlayListOperation>();
 		try {
 			String name = "";
 			String [] names = this.me.toString().split(":");
@@ -40,13 +42,16 @@ public class Replica extends Process {
 			System.out.println(e);
 		}
 		playList = new PlayList();
+		commitedPlayList = new PlayList();
 		isPrimary = false;
+		commitSeq = -1;
 		if (me.equals(primary)) { 
 			isPrimary = true;
+			this.commitSeq = 0;
 		}
 		versionVector = new HashMap<ProcessId,Long>();
 		uniqueCopies = new HashMap<String, PlayListOperation>();
-		commitSeq = 0;
+		
 		env.addProc(me, this);
 	}
 	public void setReplicas(List<ProcessId> replicas) {
@@ -57,8 +62,6 @@ public class Replica extends Process {
 		long timeStamp = 0; 
 		if (isPrimary) {
 			writer.println("I am primary");
-			
-			
 			for (;;) {
 				BayouMessage msg = getNextMessage();
 				if (msg instanceof CommitRequestMessage) { 
@@ -78,12 +81,11 @@ public class Replica extends Process {
 					commitSeq++;
 					for (int i = 0; 
 							i < commitSeq ; i ++) {
-						EntropyResponseMessage entropyResponse = new EntropyResponseMessage();
-						entropyResponse.setOp(ops.get(i));
-						entropyResponse.src = this.me; 
-						entropyResponse.dest = receiver;
-						writer.println("Sending entropy message "+ ops.get(i).serialize()+" to  "+ entropyResponse.dest);
-						sendMessage(receiver, entropyResponse);
+						CommitResponseMessage commitedMessage = new CommitResponseMessage(ops.get(i));
+						commitedMessage.src = this.me; 
+						commitedMessage.dest = receiver;
+						writer.println("Sending commited message "+ ops.get(i).serialize()+" to  "+ commitedMessage.dest);
+						sendMessage(receiver, commitedMessage);
 					}
 					
 				}
@@ -96,7 +98,8 @@ public class Replica extends Process {
 					String cmd = message.op;
 					PlayListOperation operation = PlayListOperation.getOperation(cmd);
 					operation.id = this.me+":"+operation.id;
-					operation.execStamp = timeStamp; 
+					operation.execStamp = timeStamp;
+					operation.execServer = this.me;
 					ops.add(operation);
 					uniqueCopies.put(operation.id, operation);
 					operation.operate(playList);
@@ -113,13 +116,13 @@ public class Replica extends Process {
 						for (ProcessId replica : replicas) {
 							if (this.me.equals(replica)) 
 								continue;
-							List<PlayListOperation> tempOps = new ArrayList<PlayListOperation>(ops);
-							AntiEntropy ae = new AntiEntropy(this.env, new ProcessId(this.me+":antiEntropy"+replica),this.me, replica, tempOps, this.commitSeq);
+							AntiEntropy ae = new AntiEntropy(this.env, new ProcessId(this.me+":antiEntropy"+replica),this.me, replica, ops, commitedOps,
+									this.commitSeq);
 						}
 					}
 					System.out.println(this.me +" executed "+ operation.serialize());
 					timeStamp++;
-				} else if (msg instanceof EntropyInitMessage) { 
+				} else if (msg instanceof EntropyInitMessage) {
 					EntropyRequestMessage message = new EntropyRequestMessage(); 
 					message.versionVector = versionVector;
 					message.commitSeq = this.commitSeq;
@@ -134,28 +137,57 @@ public class Replica extends Process {
 						writer.flush();
 						this.commitSeq = (this.commitSeq < message.op.commitNumber) ? message.op.commitNumber : this.commitSeq;
 						uniqueCopies.put(message.op.id, message.op);
-						System.out.println(this.me +" received "+ message.op.serialize());
 					}
 					versionVector.put(message.op.execServer, message.op.execStamp);
 				} else if ( msg instanceof CommitResponseMessage) { 
-					/*
-					 * The operation that you passed was passed by reference and not by copy so you are good to go.
-					 * Otherwise you would loop through the playlist operation and then set the commit sequence numbers
-					 */
 					CommitResponseMessage commitResponse = (CommitResponseMessage)msg;
 					writer.println("Receiving commited message from "+commitResponse.src +" "+ commitResponse.commitNumber+" "+commitResponse.op.serialize());
-					writer.flush();
 					this.commitSeq = (this.commitSeq < commitResponse.commitNumber) ? commitResponse.commitNumber : this.commitSeq;
-					if (uniqueCopies.containsKey(commitResponse.op.id)) { 
-						uniqueCopies.get(commitResponse.op.id).commitNumber = commitResponse.op.commitNumber;
-					} else { 
-						PlayListOperation copy = new PlayListOperation(commitResponse.op);
-						ops.add(copy);
-						uniqueCopies.put(copy.id,copy);
+					writer.println(this.me+" setting commit sequence number "+commitSeq);					
+					Iterator<PlayListOperation> it = ops.iterator();
+					PlayListOperation commitedOperation = commitResponse.op;
+					while (it.hasNext()) { 
+						PlayListOperation op = it.next(); 
+						if (op.id.equals(commitedOperation.id)) { 
+							it.remove();
+						}
 					}
+					boolean found = false; 
+					for (PlayListOperation op : commitedOps) { 
+						if (op.id.equals(commitedOperation.id)) { 
+							found = true; 
+							break;
+						}
+					}
+					
+					int index = 0; 
+					for(;index < commitedOps.size(); index++) { 
+						PlayListOperation op = commitedOps.get(index);
+						if (op.commitNumber != index) { 
+							break;
+						}
+						if (!op.finalExecuted) {
+							op.finalExecuted = true;
+							op.operate(commitedPlayList);
+							writer.println("Executing commited transaction "+op.serialize());
+						}		
+					}
+					if (!found) { 
+						if (commitedOps.size() == 0 ) { 
+							commitedOps.add(commitedOperation);
+						} else { 
+							commitedOps.add(index,uniqueCopies.get(commitResponse.op.id));
+						}
+					}
+					writer.flush();
+				} else if (msg instanceof UserEntropyInitMessage) { 
+					UserEntropyInitMessage initRequest = (UserEntropyInitMessage)msg;
+					ProcessId replica = initRequest.receiver;
+					AntiEntropy ae = new AntiEntropy(this.env, new ProcessId(this.me+":antiEntropy"+replica),this.me, replica, ops, commitedOps,
+							this.commitSeq);
+					
 				} else if (msg instanceof PrintLogRequestMessage) { 
 					PrintLogRequestMessage logRequest = (PrintLogRequestMessage)msg;
-					System.out.println(this.me +" printing logs");
 					if (logRequest.showCommitSeq) {
 						writer.println("###########################");
 						writer.println("Commit Seq " + this.commitSeq);
@@ -164,10 +196,8 @@ public class Replica extends Process {
 					if (logRequest.showCommitedOps) {
 						writer.println("Showing commited ops");
 						writer.println("###########################");
-						for (PlayListOperation op : ops){ 
-							if (op.commitNumber != -1) { 
-								writer.println(op.serialize());
-							}
+						for (PlayListOperation op : commitedOps){ 
+							writer.println(op.serialize());
 						}
 						writer.println("###########################");
 					}
@@ -180,6 +210,16 @@ public class Replica extends Process {
 							}
 						}
 						writer.println("###########################");
+					}
+					writer.println("PlayList");
+					writer.println("###########################");
+					System.out.println(playList.toString());
+					writer.println("Commited PlayList");
+					writer.println("###########################");
+					System.out.println(commitedPlayList.toString());
+					writer.println("Commited ops");
+					for (PlayListOperation op : commitedOps) { 
+						writer.println(op.serialize());
 					}
 					writer.flush();
 				}
