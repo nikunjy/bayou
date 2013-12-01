@@ -79,7 +79,7 @@ public class Env {
 		}
 	}
 	public enum UserCommandTypes {
-		KILLPROCESS("killProcess:"),DELPARTITION("deletePartition:"),ADDBLACKLIST("add:"),COMMAND("command:");
+		PRINTLOG("printLog:"),KILLPROCESS("killProcess:"),DELPARTITION("deletePartition:"),ADDBLACKLIST("add:"),COMMAND("command:");
 		public String message;
 		public String value() { 
 			return message;
@@ -103,8 +103,15 @@ public class Env {
 				String input  = br.readLine();
 				for (int i=0;i<UserCommandTypes.values().length;i++) { 
 					UserCommandTypes type = UserCommandTypes.values()[i];
-					if (input.contains(type.value())) { 
-						if (type.equals(UserCommandTypes.KILLPROCESS)) {
+					if (input.contains(type.value())) {
+						if (type.equals(UserCommandTypes.PRINTLOG)) { 
+							String s = input.substring(input.indexOf(":")+1);
+							String[] subs = s.split(",");
+							int replicaId = Integer.parseInt(subs[0]);
+							int printLogLevel = Integer.parseInt(subs[1]);
+							PrintLogRequestMessage logMessage = new PrintLogRequestMessage(printLogLevel); 
+							sendMessage(replicas.get(replicaId), logMessage);
+						} else if (type.equals(UserCommandTypes.KILLPROCESS)) {
 							String id = input.substring(input.indexOf(":")+1);
 							System.out.println(id);
 							env.removeProc(new ProcessId(id));
@@ -158,22 +165,24 @@ public class Env {
 	void run(String[] args){
 		replicas = new ArrayList<ProcessId>();
 		primary = new ProcessId("primary-replica");
+		Replica primaryReplica = new Replica(this, primary, primary);
 		for (int i = 0; i < nReplicas; i++) {
 			replicas.add(new ProcessId("replica:" + i));
+		}
+		for (int i = 0; i < nReplicas; i++) {
 			Replica repl = new Replica(this, replicas.get(i), primary);
 			repl.setReplicas(replicas);
 		}
 		if (numClients == 1) {
-			for (int i = 1; i < 2; i++) {
+			for (int i = 1; i < 10; i++) {
 				ProcessId pid = new ProcessId("client:" + i);
 				PlayListOperation op = new PlayListOperation();
 				op.op = PlayListOperation.OperationTypes.ADD.value();
 				op.name = "Blah"+i;
 				op.url = "http://blah";
-				for (int r = 0; r < 1; r++) {
-					sendMessage(replicas.get(r),
-							new RequestMessage(pid, replicas.get(r), op.serialize()));
-				}
+				sendMessage(replicas.get(i%replicas.size()),
+							new RequestMessage(pid, replicas.get(i%replicas.size()), op.serialize()));
+				
 			}
 		} else { 
 			for (int i = 1; i <= numClients ; i++) { 
@@ -183,7 +192,7 @@ public class Env {
 				//((Thread)c).start();
 			}
 		}
-		//UserReader ucmd = new UserReader(this,new ProcessId("usercmd:"));
+		UserReader ucmd = new UserReader(this,new ProcessId("usercmd:"));
 	}
 
 	public static void main(String[] args){
