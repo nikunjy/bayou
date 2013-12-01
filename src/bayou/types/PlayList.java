@@ -27,8 +27,10 @@ public class PlayList {
 		Iterator<Song> it = songs.iterator();
 		while(it.hasNext()) { 
 			Song song = it.next(); 
-			song.url = url;
-			break;
+			if (song.name.equalsIgnoreCase(name))  {
+				song.url = url;
+				break;
+			}
 		}
 	}
 	public String toString() { 
