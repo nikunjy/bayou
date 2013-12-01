@@ -220,10 +220,6 @@ public class Replica extends Process {
 					writer.println("Commited PlayList");
 					writer.println("###########################");
 					System.out.println(commitedPlayList.toString());
-					writer.println("Commited ops");
-					for (PlayListOperation op : commitedOps) { 
-						writer.println(op.serialize());
-					}
 					writer.flush();
 				}
 			}

@@ -23,6 +23,7 @@ public class Env {
 			this.process2 = p2;
 		}
 	};
+	public List<ProcessId> isolatedNodes = new ArrayList<ProcessId>();
 	public List<BlackList> blackList = new ArrayList<BlackList>();
 	public Env() { 
 		try {
@@ -41,7 +42,11 @@ public class Env {
 		if (msg.src == null || dst == null) { 
 			return false;
 		}
-		
+		for (ProcessId isolatedNode : isolatedNodes) { 
+			if (dst.equals(isolatedNode) || dst.name.contains(isolatedNode.name)) {
+				return true;
+			}
+		}
 		for (BlackList item : blackList) { 
 			if (dst.name.contains(item.process1) && msg.src.name.contains(item.process2)) { 
 				return true;
@@ -53,6 +58,9 @@ public class Env {
 		return false;
 	}
 	synchronized void sendMessage(ProcessId dst, BayouMessage msg){
+		if (isBlackListMessage(dst,msg)) { 
+			return;
+		}
 		Process p = procs.get(dst);
 		if (p != null) {
 			p.deliver(msg);
@@ -79,7 +87,7 @@ public class Env {
 		}
 	}
 	public enum UserCommandTypes {
-		PRINTLOG("printLog:"),INITENTROPY("initEntropy:"),
+		PRINTLOG("printLog:"),INITENTROPY("initEntropy:"),PRINTALL("printAll:"),ISOLATE("isolate:"),RECONNECT("reconnect:"),PAUSE("pause:"),RESUME("resume:"),
 		KILLPROCESS("killProcess:"),DELPARTITION("deletePartition:"),ADDBLACKLIST("add:"),COMMAND("command:");
 		public String message;
 		public String value() { 
@@ -98,7 +106,7 @@ public class Env {
 		public void body() { 
 			try {
 				BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-				Thread.sleep(7000);
+				//Thread.sleep(7000);
 				while(true) {
 				System.out.println("Enter your Command : ");
 				String input  = br.readLine();
@@ -112,6 +120,12 @@ public class Env {
 							int printLogLevel = Integer.parseInt(subs[1]);
 							PrintLogRequestMessage logMessage = new PrintLogRequestMessage(printLogLevel); 
 							sendMessage(replicas.get(replicaId), logMessage);
+						} else if (type.equals(UserCommandTypes.PRINTALL)) { 
+							int logLevel = Integer.parseInt(input.substring(input.indexOf(":")+1));
+							for (ProcessId replica : replicas) {
+								PrintLogRequestMessage logMessage = new PrintLogRequestMessage(logLevel); 
+								sendMessage(replica, logMessage);
+							}
 						} else if (type.equals(UserCommandTypes.INITENTROPY)) {
 							String s = input.substring(input.indexOf(":")+1);
 							String[] subs = s.split(",");
@@ -120,7 +134,37 @@ public class Env {
 							UserEntropyInitMessage initRequest = new UserEntropyInitMessage(receiver);
 							initRequest.dest = sender;
 							sendMessage(sender, initRequest);
-						}else if (type.equals(UserCommandTypes.KILLPROCESS)) {
+						} else if (type.equals(UserCommandTypes.ISOLATE)) {
+							int replicaId = Integer.parseInt(input.substring(input.indexOf(":")+1));
+							isolatedNodes.add(replicas.get(replicaId));
+						} else if (type.equals(UserCommandTypes.RECONNECT)) {
+							int replicaId = Integer.parseInt(input.substring(input.indexOf(":")+1));
+							isolatedNodes.remove(replicas.get(replicaId));
+						} else if (type.equals(UserCommandTypes.PAUSE)) {						
+							String s = input.substring(input.indexOf(":")+1);
+							if (s.isEmpty() || s.equals(" ")) {
+								for (ProcessId id : procs.keySet()) { 
+									if (!id.equals(this.me)) {
+										procs.get(id).suspend();
+									}
+								}
+							} else { 
+								ProcessId replica = replicas.get(Integer.parseInt(s));
+								procs.get(replica).wait();
+							}
+						} else if (type.equals(UserCommandTypes.RESUME)) { 
+							String s = input.substring(input.indexOf(":")+1);
+							if (s.isEmpty() || s.equals(" ")) {
+								for (ProcessId id : procs.keySet()) { 
+									if (!id.equals(this.me)) {
+										procs.get(id).resume();
+									}
+								}
+							} else { 
+								ProcessId replica = replicas.get(Integer.parseInt(s));
+								procs.get(replica).notify();
+							}
+						} else if (type.equals(UserCommandTypes.KILLPROCESS)) {
 							String id = input.substring(input.indexOf(":")+1);
 							System.out.println(id);
 							env.removeProc(new ProcessId(id));

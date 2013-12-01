@@ -1,9 +1,6 @@
-Receiving commited message from primary-replica 1 {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":1,"finalExecuted":false,"url":"http://blah","id":"replica:1:e84cfd94-a268-4e1d-a649-08afcdfb0ac7"}
-replica:1 setting commit sequence number 1
-Receiving commited message from primary-replica 0 {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":0,"finalExecuted":false,"url":"http://blah","id":"replica:2:1990cfaf-dcc5-47c5-9039-543b4b4d501c"}
-replica:1 setting commit sequence number 1
-Receiving commited message from primary-replica 0 {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":1,"finalExecuted":false,"url":"http://blah","id":"replica:1:e84cfd94-a268-4e1d-a649-08afcdfb0ac7"}
-replica:1 setting commit sequence number 1
-Executing commited transaction {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":0,"finalExecuted":true,"url":"http://blah","id":"replica:2:1990cfaf-dcc5-47c5-9039-543b4b4d501c"}
-Executing commited transaction {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":1,"finalExecuted":true,"url":"http://blah","id":"replica:1:e84cfd94-a268-4e1d-a649-08afcdfb0ac7"}
-Receiving entropy response message from replica:2:antiEntropyreplica:1 {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":-1,"finalExecuted":false,"url":"http://blah","id":"replica:2:1990cfaf-dcc5-47c5-9039-543b4b4d501c"}
+Receiving commited message from primary-replica 0 {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":0,"finalExecuted":false,"url":"http://blah","id":"replica:1:9e43b8a9-683c-4579-88cb-a79e67227129"}
+replica:1 setting commit sequence number 0
+Receiving commited message from primary-replica 0 {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":0,"finalExecuted":false,"url":"http://blah","id":"replica:1:9e43b8a9-683c-4579-88cb-a79e67227129"}
+replica:1 setting commit sequence number 0
+Executing commited transaction {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":0,"finalExecuted":true,"url":"http://blah","id":"replica:1:9e43b8a9-683c-4579-88cb-a79e67227129"}
+Receiving entropy response message from replica:2:antiEntropyreplica:1 {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":-1,"finalExecuted":false,"url":"http://blah","id":"replica:2:663a670a-4cf2-469b-9bf6-753a0c1b428d"}
