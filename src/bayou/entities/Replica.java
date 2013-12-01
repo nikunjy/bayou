@@ -153,7 +153,9 @@ public class Replica extends Process {
 						}
 					}
 					boolean found = false; 
-					for (PlayListOperation op : commitedOps) { 
+					for (PlayListOperation op : commitedOps) {
+						//System.out.println(op.id); 
+						//System.out.println(commitedOperation.id);
 						if (op.id.equals(commitedOperation.id)) { 
 							found = true; 
 							break;
@@ -176,9 +178,10 @@ public class Replica extends Process {
 						if (commitedOps.size() == 0 ) { 
 							commitedOps.add(commitedOperation);
 						} else { 
-							commitedOps.add(index,uniqueCopies.get(commitResponse.op.id));
+							commitedOps.add(index, commitedOperation);
 						}
 					}
+					uniqueCopies.put(commitedOperation.id, commitedOperation);
 					writer.flush();
 				} else if (msg instanceof UserEntropyInitMessage) { 
 					UserEntropyInitMessage initRequest = (UserEntropyInitMessage)msg;

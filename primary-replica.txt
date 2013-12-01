@@ -1,6 +1,6 @@
 I am primary
-Received commit request from replica:1 with commit number -1
-Primary replica assigning commit number to {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":0,"finalExecuted":false,"url":"http://blah","id":"replica:1:124ec247-6172-4e08-b506-6981849cfed1"} assigned 0 received from replica:1
-Sending commited message {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":0,"finalExecuted":false,"url":"http://blah","id":"replica:1:124ec247-6172-4e08-b506-6981849cfed1"} to  replica:1
 Received commit request from replica:2 with commit number -1
-Primary replica assigning commit number to {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":1,"finalExecuted":false,"url":"http://blah","id":"replica:2:71ad3c7f-558e-47b5-b391-c7a45370d724"} assigned 1 received from replica:2
+Primary replica assigning commit number to {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":0,"finalExecuted":false,"url":"http://blah","id":"replica:2:1990cfaf-dcc5-47c5-9039-543b4b4d501c"} assigned 0 received from replica:2
+Sending commited message {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":0,"finalExecuted":false,"url":"http://blah","id":"replica:2:1990cfaf-dcc5-47c5-9039-543b4b4d501c"} to  replica:2
+Received commit request from replica:1 with commit number -1
+Primary replica assigning commit number to {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":1,"finalExecuted":false,"url":"http://blah","id":"replica:1:e84cfd94-a268-4e1d-a649-08afcdfb0ac7"} assigned 1 received from replica:1

@@ -1,2 +1,34 @@
-Receiving entropy response message from replica:1:antiEntropyreplica:3 {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":-1,"finalExecuted":false,"url":"http://blah","id":"replica:1:124ec247-6172-4e08-b506-6981849cfed1"}
-Receiving entropy response message from replica:2:antiEntropyreplica:3 {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":-1,"finalExecuted":false,"url":"http://blah","id":"replica:2:71ad3c7f-558e-47b5-b391-c7a45370d724"}
+Receiving entropy response message from replica:2:antiEntropyreplica:3 {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":-1,"finalExecuted":false,"url":"http://blah","id":"replica:2:1990cfaf-dcc5-47c5-9039-543b4b4d501c"}
+Receiving entropy response message from replica:1:antiEntropyreplica:3 {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":-1,"finalExecuted":false,"url":"http://blah","id":"replica:1:e84cfd94-a268-4e1d-a649-08afcdfb0ac7"}
+Showing commited ops
+###########################
+###########################
+Showing Tentative writes
+###########################
+{"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":-1,"finalExecuted":false,"url":"http://blah","id":"replica:2:1990cfaf-dcc5-47c5-9039-543b4b4d501c"}
+{"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":-1,"finalExecuted":false,"url":"http://blah","id":"replica:1:e84cfd94-a268-4e1d-a649-08afcdfb0ac7"}
+###########################
+PlayList
+###########################
+Commited PlayList
+###########################
+Commited ops
+Receiving commited message from replica:1:antiEntropyreplica:3 0 {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":0,"finalExecuted":true,"url":"http://blah","id":"replica:2:1990cfaf-dcc5-47c5-9039-543b4b4d501c"}
+replica:3 setting commit sequence number 0
+Receiving commited message from replica:1:antiEntropyreplica:3 0 {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":1,"finalExecuted":true,"url":"http://blah","id":"replica:1:e84cfd94-a268-4e1d-a649-08afcdfb0ac7"}
+replica:3 setting commit sequence number 0
+Showing commited ops
+###########################
+{"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":0,"finalExecuted":true,"url":"http://blah","id":"replica:2:1990cfaf-dcc5-47c5-9039-543b4b4d501c"}
+{"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":1,"finalExecuted":true,"url":"http://blah","id":"replica:1:e84cfd94-a268-4e1d-a649-08afcdfb0ac7"}
+###########################
+Showing Tentative writes
+###########################
+###########################
+PlayList
+###########################
+Commited PlayList
+###########################
+Commited ops
+{"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":0,"finalExecuted":true,"url":"http://blah","id":"replica:2:1990cfaf-dcc5-47c5-9039-543b4b4d501c"}
+{"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":1,"finalExecuted":true,"url":"http://blah","id":"replica:1:e84cfd94-a268-4e1d-a649-08afcdfb0ac7"}
