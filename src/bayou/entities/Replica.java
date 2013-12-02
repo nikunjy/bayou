@@ -161,7 +161,7 @@ public class Replica extends Process {
 								connectedReplicas.remove(ret);*/
 						}
 						else if(message.op.isWriteOp()) {
-							if(message.op.commitNumber == -1)
+							if(message.op.commitNumber == -1) //should always be true..
 								message.op.operate(playList);
 						}
 						uniqueCopies.put(message.op.id, message.op);
@@ -169,6 +169,8 @@ public class Replica extends Process {
 					versionVector.put(message.op.execServer, message.op.execStamp);
 				} else if ( msg instanceof CommitResponseMessage) { 
 					CommitResponseMessage commitResponse = (CommitResponseMessage)msg;
+					if(this.commitSeq > commitResponse.commitNumber)
+						continue;
 					writer.println("Receiving commited message from "+commitResponse.src +" "+ commitResponse.commitNumber+" "+commitResponse.op.serialize());
 					this.commitSeq = (this.commitSeq < commitResponse.commitNumber) ? commitResponse.commitNumber : this.commitSeq;
 					writer.println(this.me+" setting commit sequence number "+commitSeq);					
@@ -289,6 +291,7 @@ public class Replica extends Process {
 					uniqueCopies.put(op.id, op);
 					AntiEntropy ae = new AntiEntropy(this.env, new ProcessId(this.me+":antiEntropy"+nhbr),this.me, nhbr, ops, commitedOps,
 							this.commitSeq);
+					connectedReplicas.clear();
 					timeStamp++;
 				} else if(msg instanceof BreakConnectionMessage) {
 					connectedReplicas.remove(env.idToProc.get(((BreakConnectionMessage) msg).getNeigh()));
