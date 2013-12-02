@@ -1,6 +1,8 @@
 I am primary
-Received commit request from replica:1 with commit number -1
-Primary replica assigning commit number to {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":0,"finalExecuted":false,"url":"http://blah","id":"replica:1:9e43b8a9-683c-4579-88cb-a79e67227129"} assigned 0 received from replica:1
-Sending commited message {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":0,"finalExecuted":false,"url":"http://blah","id":"replica:1:9e43b8a9-683c-4579-88cb-a79e67227129"} to  replica:1
 Received commit request from replica:2 with commit number -1
-Primary replica assigning commit number to {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":1,"finalExecuted":false,"url":"http://blah","id":"replica:2:663a670a-4cf2-469b-9bf6-753a0c1b428d"} assigned 1 received from replica:2
+Primary replica assigning commit number to {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":0,"finalExecuted":false,"url":"http://blah","id":"replica:2:54a9ae29-f71f-47de-9d88-48020b428364"} assigned 0 received from replica:2
+Sending commited message {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":0,"finalExecuted":false,"url":"http://blah","id":"replica:2:54a9ae29-f71f-47de-9d88-48020b428364"} to  replica:2
+Received commit request from replica:1 with commit number -1
+Primary replica assigning commit number to {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":1,"finalExecuted":false,"url":"http://blah","id":"replica:1:506ba094-6d64-4734-89ea-428967c2f825"} assigned 1 received from replica:1
+Sending commited message {"op":"add","name":"Blah2","execServer":{"name":"replica:2"},"execStamp":0,"commitNumber":0,"finalExecuted":false,"url":"http://blah","id":"replica:2:54a9ae29-f71f-47de-9d88-48020b428364"} to  replica:1
+Sending commited message {"op":"add","name":"Blah1","execServer":{"name":"replica:1"},"execStamp":0,"commitNumber":1,"finalExecuted":false,"url":"http://blah","id":"replica:1:506ba094-6d64-4734-89ea-428967c2f825"} to  replica:1

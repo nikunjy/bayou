@@ -67,27 +67,20 @@ public class Replica extends Process {
 				if (msg instanceof CommitRequestMessage) { 
 					CommitRequestMessage req = (CommitRequestMessage)msg;
 					writer.println("Received commit request from "+req.src+" with commit number "+req.senderCommitNumber);
-					req.op.commitNumber = commitSeq;
-					//Saving the copy of an operation here. 
+					req.op.commitNumber = commitSeq; 
 					ops.add(new PlayListOperation(req.op));
 					ProcessId receiver = msg.src; 
-					CommitResponseMessage response = new CommitResponseMessage(req.op);
-					response.src = this.me; 
-					response.dest = receiver; 
-					response.commitNumber = commitSeq; 
-					sendMessage(receiver, response);
-					writer.println("Primary replica assigning commit number to "+ req.op.serialize()+" assigned "+commitSeq +" received from "+ response.dest);
-					writer.flush();
+					writer.println("Primary replica assigning commit number to "+ req.op.serialize()+" assigned "+commitSeq +" received from "+ receiver);
 					commitSeq++;
-					for (int i = 0; 
-							i < commitSeq ; i ++) {
-						CommitResponseMessage commitedMessage = new CommitResponseMessage(ops.get(i));
+					for (int i = 0; i < commitSeq ; i ++) {
+						CommitResponseMessage commitedMessage = new CommitResponseMessage(new PlayListOperation(ops.get(i)));
+						commitedMessage.commitNumber = ops.get(i).commitNumber;
 						commitedMessage.src = this.me; 
 						commitedMessage.dest = receiver;
 						writer.println("Sending commited message "+ ops.get(i).serialize()+" to  "+ commitedMessage.dest);
 						sendMessage(receiver, commitedMessage);
 					}
-					
+					writer.flush();
 				}
 			}
 		} else {
@@ -131,7 +124,7 @@ public class Replica extends Process {
 					sendMessage(message.dest, message);
 				} else if ( msg instanceof EntropyResponseMessage) { 
 					EntropyResponseMessage message = (EntropyResponseMessage)msg;
-					if (!uniqueCopies.containsKey(message.op)) {
+					if (!uniqueCopies.containsKey(message.op.id)) {
 						ops.add(message.op);
 						writer.println("Receiving entropy response message from "+message.src +" "+message.op.serialize());
 						writer.flush();
@@ -154,32 +147,15 @@ public class Replica extends Process {
 					}
 					boolean found = false; 
 					for (PlayListOperation op : commitedOps) {
-						//System.out.println(op.id); 
-						//System.out.println(commitedOperation.id);
 						if (op.id.equals(commitedOperation.id)) { 
 							found = true; 
 							break;
 						}
 					}
-					
-					int index = 0; 
-					for(;index < commitedOps.size(); index++) { 
-						PlayListOperation op = commitedOps.get(index);
-						if (op.commitNumber != index) { 
-							break;
-						}
-						if (!op.finalExecuted) {
-							op.finalExecuted = true;
-							op.operate(commitedPlayList);
-							writer.println("Executing commited transaction "+op.serialize());
-						}		
-					}
 					if (!found) { 
-						if (commitedOps.size() == 0 ) { 
-							commitedOps.add(commitedOperation);
-						} else { 
-							commitedOps.add(index, commitedOperation);
-						}
+						commitedOps.add(commitedOperation);
+						commitedOperation.operate(commitedPlayList);
+						writer.println("Executing commited operation"+commitedOperation.serialize());
 					}
 					uniqueCopies.put(commitedOperation.id, commitedOperation);
 					writer.flush();
