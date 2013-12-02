@@ -20,7 +20,7 @@ public class PlayListOperation {
 	public String op;
 	public String name;
 	public ProcessId execServer;
-	public long execStamp;
+	public Long execStamp;
 	public long commitNumber;
 	public boolean finalExecuted;
 	public String url;
@@ -47,7 +47,9 @@ public class PlayListOperation {
 			playList.removeSong(name);
 		} else if (op.equalsIgnoreCase(OperationTypes.EDIT.value())) {
 			playList.editSong(name, url);
-		} else { 
+		} else if (op.equalsIgnoreCase(OperationTypes.CREATE.value())) {
+			
+	    } else { 
 			
 		}
 	}

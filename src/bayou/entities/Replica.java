@@ -141,9 +141,29 @@ public class Replica extends Process {
 					EntropyResponseMessage message = (EntropyResponseMessage)msg;
 					if (!uniqueCopies.containsKey(message.op.id)) {
 						ops.add(message.op);
+						
 						writer.println("Receiving entropy response message from "+message.src +" "+message.op.serialize());
 						writer.flush();
 						this.commitSeq = (this.commitSeq < message.op.commitNumber) ? message.op.commitNumber : this.commitSeq;
+						/*Perform the op*/
+						if(message.op.isCreateOp()) {
+							//Will wait for it to get committed and then perform it//
+							/*ProcessId ret = new ProcessId(message.op.execStamp.toString()+":"+message.op.execServer);
+							System.out.println(this.me+": Got to know about creation of: "+ret.toString());
+							replicas.add(ret);*/
+						}
+						else if (message.op.isRetireOp()) {
+							//Will wait for it to get committed and then perform it...
+							/*ProcessId ret = message.op.execServer;
+							System.out.println(this.me+": Got to know about retirement of: "+ret.toString());
+							replicas.remove(ret);
+							if(connectedReplicas.contains(ret))
+								connectedReplicas.remove(ret);*/
+						}
+						else if(message.op.isWriteOp()) {
+							if(message.op.commitNumber == -1)
+								message.op.operate(playList);
+						}
 						uniqueCopies.put(message.op.id, message.op);
 					}
 					versionVector.put(message.op.execServer, message.op.execStamp);
@@ -169,7 +189,23 @@ public class Replica extends Process {
 					}
 					if (!found) { 
 						commitedOps.add(commitedOperation);
-						commitedOperation.operate(commitedPlayList);
+						if(commitedOperation.isCreateOp()) {
+							ProcessId ret = new ProcessId(commitedOperation.execStamp.toString()+":"+commitedOperation.execServer);
+							System.out.println(this.me+": Got to know about creation of: "+ret.toString());
+							replicas.add(ret);
+						}
+						else if (commitedOperation.isRetireOp()) {
+							ProcessId ret = commitedOperation.execServer;
+							System.out.println(this.me+": Got to know about retirement of: "+ret.toString());
+							replicas.remove(ret);
+							if(connectedReplicas.contains(ret))
+								connectedReplicas.remove(ret);
+						}
+						else if(commitedOperation.isWriteOp()) {
+							
+							commitedOperation.operate(commitedPlayList);
+						}
+						
 						writer.println("Executing commited operation"+commitedOperation.serialize());
 					}
 					uniqueCopies.put(commitedOperation.id, commitedOperation);
@@ -213,9 +249,9 @@ public class Replica extends Process {
 					System.out.println(commitedPlayList.toString());
 					writer.flush();
 				} else if(msg instanceof CreationMessage) {
-					int indexOfReplica = ((CreationMessage) msg).indexOfReplica;
-					ProcessId ret = new ProcessId("replica:"+timeStamp.toString()+":"+this.me);
-					System.out.println(this.me + ": Received creation write for replica:"+indexOfReplica+"with ID:"+ret.toString());
+					Integer indexOfReplica = ((CreationMessage) msg).indexOfReplica;
+					ProcessId ret = new ProcessId(timeStamp.toString()+":"+this.me);
+					System.out.println(this.me + ": Received creation write for replica:"+indexOfReplica+"with assigned ID:"+ret.toString());
 					replicas.add(ret);
 					connectedReplicas.add(ret);
 					env.replicas.add(ret);
@@ -233,6 +269,7 @@ public class Replica extends Process {
 					op.execServer = this.me;
 					op.execStamp = timeStamp;
 					ops.add(op);
+					uniqueCopies.put(op.id, op);
 					//TODO: need to ensure this write is executed..
 					//TODO: do we need to put in version vector??
 					//versionVector.put(ret, timeStamp);
@@ -249,6 +286,7 @@ public class Replica extends Process {
 					op.execServer = this.me;
 					op.execStamp = timeStamp;
 					ops.add(op);
+					uniqueCopies.put(op.id, op);
 					AntiEntropy ae = new AntiEntropy(this.env, new ProcessId(this.me+":antiEntropy"+nhbr),this.me, nhbr, ops, commitedOps,
 							this.commitSeq);
 					timeStamp++;

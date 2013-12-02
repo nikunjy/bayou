@@ -54,22 +54,26 @@ public class AntiEntropy extends Process {
 					if (op.commitNumber != -1) { 
 						sortedCommits.put(op.commitNumber, op);
 					}
+					else {
+						System.out.println(senderReplica.toString()+": Committed op with commitNumber = -1 found, something is wrong...");
+					}
 				}
 				for ( Long key : sortedCommits.keySet()) { 
 					if ( key > entropyMessage.commitSeq) {
 						PlayListOperation op = sortedCommits.get(key);
-						if ( op.execStamp <=  versionVector.get(op.execServer)) {
+						//if ( op.execStamp <=  versionVector.get(op.execServer)) {
 							CommitResponseMessage commitMessage = new CommitResponseMessage(sortedCommits.get(key));
 							commitMessage.src = this.me; 
 							commitMessage.dest = msg.src;
+							commitMessage.commitNumber = key;
 							sendMessage(msg.src, commitMessage);
-						} else  {
+						/*} else  {
 							EntropyResponseMessage resp = new EntropyResponseMessage(); 
 							resp.dest = message.src;
 							resp.src = this.me;
 							resp.setOp(op);
 							sendMessage(message.src,resp);
-						}
+						}*/
 					}
 				}	
 			}
