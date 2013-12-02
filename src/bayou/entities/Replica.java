@@ -20,6 +20,7 @@ public class Replica extends Process {
 	List<PlayListOperation> ops;
 	List<PlayListOperation> commitedOps;
 	Map<String, PlayListOperation> uniqueCopies;
+	Map<String, PlayListOperation> uniqueCommits;
 	PrintWriter writer;
 	int entropyThreshold = 1;
 	boolean isPrimary;
@@ -54,6 +55,7 @@ public class Replica extends Process {
 		}
 		versionVector = new HashMap<ProcessId,Long>();
 		uniqueCopies = new HashMap<String, PlayListOperation>();
+		uniqueCommits = new HashMap<String, PlayListOperation>();
 		this.timeStamp = (long)0;
 		env.addProc(me, this);
 	}
@@ -81,6 +83,7 @@ public class Replica extends Process {
 				BayouMessage msg = getNextMessage();
 				if (msg instanceof CommitRequestMessage) { 
 					CommitRequestMessage req = (CommitRequestMessage)msg;
+					if(uniqueCommits.containsKey(req.op.id)) {
 					writer.println("Received commit request from "+req.src+" with commit number "+req.senderCommitNumber);
 					req.op.commitNumber = commitSeq; 
 					ops.add(new PlayListOperation(req.op));
@@ -96,6 +99,8 @@ public class Replica extends Process {
 						sendMessage(receiver, commitedMessage);
 					}
 					writer.flush();
+					uniqueCommits.put(req.op.id,req.op);
+					}
 				}
 			}
 		} else {
@@ -115,14 +120,16 @@ public class Replica extends Process {
 						for (PlayListOperation tempOp : ops) { 
 							if (tempOp.commitNumber != -1) 
 								continue;
+							if(connectedReplicas.contains(primary)) {
 							CommitRequestMessage commitReq = new CommitRequestMessage(new PlayListOperation(tempOp)); 
 							commitReq.src = this.me; 
 							commitReq.dest = primary; 
 							commitReq.senderCommitNumber = this.commitSeq;
 							sendMessage(primary, commitReq);
+							}
 						}
 						for (ProcessId replica : connectedReplicas) {
-							if (this.me.equals(replica)) 
+							if (this.me.equals(replica) || replica.equals(primary)) 
 								continue;
 							AntiEntropy ae = new AntiEntropy(this.env, new ProcessId(this.me+":antiEntropy"+replica),this.me, replica, ops, commitedOps,
 									this.commitSeq);
@@ -141,6 +148,13 @@ public class Replica extends Process {
 					EntropyResponseMessage message = (EntropyResponseMessage)msg;
 					if (!uniqueCopies.containsKey(message.op.id)) {
 						ops.add(message.op);
+						if(connectedReplicas.contains(primary)) {
+						CommitRequestMessage commitReq = new CommitRequestMessage(new PlayListOperation(message.op)); 
+						commitReq.src = this.me; 
+						commitReq.dest = primary; 
+						commitReq.senderCommitNumber = this.commitSeq;
+						sendMessage(primary, commitReq);
+						}
 						
 						writer.println("Receiving entropy response message from "+message.src +" "+message.op.serialize());
 						writer.flush();
@@ -148,17 +162,17 @@ public class Replica extends Process {
 						/*Perform the op*/
 						if(message.op.isCreateOp()) {
 							//Will wait for it to get committed and then perform it//
-							/*ProcessId ret = new ProcessId(message.op.execStamp.toString()+":"+message.op.execServer);
+							ProcessId ret = new ProcessId(message.op.execStamp.toString()+":"+message.op.execServer);
 							System.out.println(this.me+": Got to know about creation of: "+ret.toString());
-							replicas.add(ret);*/
+							replicas.add(ret);
 						}
 						else if (message.op.isRetireOp()) {
 							//Will wait for it to get committed and then perform it...
-							/*ProcessId ret = message.op.execServer;
+							ProcessId ret = message.op.execServer;
 							System.out.println(this.me+": Got to know about retirement of: "+ret.toString());
 							replicas.remove(ret);
 							if(connectedReplicas.contains(ret))
-								connectedReplicas.remove(ret);*/
+								connectedReplicas.remove(ret);
 						}
 						else if(message.op.isWriteOp()) {
 							if(message.op.commitNumber == -1) //should always be true..
@@ -191,19 +205,19 @@ public class Replica extends Process {
 					}
 					if (!found) { 
 						commitedOps.add(commitedOperation);
-						if(commitedOperation.isCreateOp()) {
+						if(commitedOperation.isCreateOp() && !uniqueCopies.containsKey(commitedOperation.id)) {
 							ProcessId ret = new ProcessId(commitedOperation.execStamp.toString()+":"+commitedOperation.execServer);
 							System.out.println(this.me+": Got to know about creation of: "+ret.toString());
 							replicas.add(ret);
 						}
-						else if (commitedOperation.isRetireOp()) {
+						else if (commitedOperation.isRetireOp() && !uniqueCopies.containsKey(commitedOperation.id)) {
 							ProcessId ret = commitedOperation.execServer;
 							System.out.println(this.me+": Got to know about retirement of: "+ret.toString());
 							replicas.remove(ret);
 							if(connectedReplicas.contains(ret))
 								connectedReplicas.remove(ret);
 						}
-						else if(commitedOperation.isWriteOp()) {
+						if(commitedOperation.isWriteOp() && !commitedOperation.isCreateOp() && !commitedOperation.isRetireOp()) {
 							
 							commitedOperation.operate(commitedPlayList);
 						}
@@ -276,6 +290,19 @@ public class Replica extends Process {
 					//TODO: do we need to put in version vector??
 					//versionVector.put(ret, timeStamp);
 					System.out.println(this.me + " got to know about, replica:"+indexOfReplica+"with ID:"+ret.toString());
+					if(connectedReplicas.contains(primary)) {
+						CommitRequestMessage commitReq = new CommitRequestMessage(new PlayListOperation(op)); 
+						commitReq.src = this.me; 
+						commitReq.dest = primary; 
+						commitReq.senderCommitNumber = this.commitSeq;
+						sendMessage(primary, commitReq);
+					}
+					for (ProcessId replica : connectedReplicas) {
+						if (this.me.equals(replica) || replica.equals(primary)) 
+							continue;
+						AntiEntropy ae = new AntiEntropy(this.env, new ProcessId(this.me+":antiEntropy"+replica),this.me, replica, ops, commitedOps,
+								this.commitSeq);
+					}
 					timeStamp++;
 				} else if(msg instanceof RetirementMessage) { 
 					/*I am supposed to retire*/
