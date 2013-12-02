@@ -8,7 +8,7 @@ import com.google.gson.Gson;
 
 public class PlayListOperation {
 	public enum OperationTypes {
-		QUERY("query"),ADD("add"),EDIT("edit"),DELETE("delete");
+		QUERY("query"),ADD("add"),EDIT("edit"),DELETE("delete"),CREATE("create"),RETIRE("retire");
 		public String message;
 		public String value() { 
 			return message;
@@ -51,8 +51,21 @@ public class PlayListOperation {
 			
 		}
 	}
+	//TODO: needs to be changed to handle CREATE & RETIRE ?
 	public boolean isWriteOp() { 
 		if (!op.equalsIgnoreCase(OperationTypes.QUERY.value())) {
+			return true;
+		}
+		return false;
+	}
+	public boolean isCreateOp() {
+		if(op.equalsIgnoreCase(OperationTypes.CREATE.value())) {
+			return true;
+		}
+		return false;
+	}
+	public boolean isRetireOp() {
+		if(op.equalsIgnoreCase(OperationTypes.RETIRE.value())) {
 			return true;
 		}
 		return false;

@@ -94,3 +94,73 @@ class EntropyResponseMessage extends BayouMessage {
 		this.op = new PlayListOperation(cp);
 	}
 }
+class CreationMessage extends BayouMessage {
+	PlayListOperation op;
+	int indexOfReplica;
+	public CreationMessage() {
+		super();
+	}
+	public void setOp(PlayListOperation cp) {
+		this.op = new PlayListOperation(cp);
+	}
+	public void setIndex(int index) {
+		this.indexOfReplica = index;
+	}
+}
+class CreationRespMessage extends BayouMessage {
+	ProcessId myId;
+	Long timeStamp;
+	public CreationRespMessage() {
+		super();
+	}
+	public void setData(ProcessId id, Long tStamp){
+		this.myId = id;
+		this.timeStamp = tStamp;
+	}
+	public ProcessId getId() {
+		return this.myId;
+	}
+	public Long getTimeStamp() {
+		return this.timeStamp;
+	}
+}
+class RetirementMessage extends BayouMessage {
+	PlayListOperation op;
+	int neigh;
+	public RetirementMessage() {
+		super();
+	}
+	public void setOp(PlayListOperation cp) {
+		this.op = new PlayListOperation(cp);
+	}
+	public void setNeigh(int in) {
+		neigh = in;
+	}
+	public int getNeigh() {
+		return neigh;
+	}
+}
+class BreakConnectionMessage extends BayouMessage {
+	int neighbour;
+	public BreakConnectionMessage() {
+		super();
+	}
+	public void setNeigh(int in) {
+		neighbour = in;
+	}
+	public int getNeigh() {
+		return this.neighbour;
+	}
+}
+class RecoverConnectionMessage extends BayouMessage {
+	int neighbour;
+	public RecoverConnectionMessage() {
+		super();
+	}
+	public void setNeigh(int in) {
+		neighbour = in;
+	}
+	public int getNeigh() {
+		return this.neighbour;
+	}
+}

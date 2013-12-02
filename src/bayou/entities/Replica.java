@@ -13,6 +13,7 @@ import bayou.types.PlayListOperation;
 
 public class Replica extends Process {
 	List<ProcessId> replicas;
+	List<ProcessId> connectedReplicas;
 	ProcessId primary;
 	PlayList playList;
 	PlayList commitedPlayList;
@@ -24,10 +25,12 @@ public class Replica extends Process {
 	boolean isPrimary;
 	long commitSeq;
 	Map<ProcessId, Long> versionVector;
+	Long timeStamp;
 	public Replica(Env env, ProcessId me, ProcessId primary) {
 		this.env = env;
 		this.me = me;
 		this.primary = primary;
+		//this.connectedReplicas = neigh;
 		replicas = new ArrayList<ProcessId>();
 		ops = new ArrayList<PlayListOperation>();
 		commitedOps = new ArrayList<PlayListOperation>();
@@ -51,15 +54,27 @@ public class Replica extends Process {
 		}
 		versionVector = new HashMap<ProcessId,Long>();
 		uniqueCopies = new HashMap<String, PlayListOperation>();
-		
+		this.timeStamp = (long)0;
 		env.addProc(me, this);
+	}
+	public void setConnectedList(List<ProcessId> neigh) {
+		this.connectedReplicas = neigh;
 	}
 	public void setReplicas(List<ProcessId> replicas) {
 		this.replicas = replicas;
 	}
+	public void removeFromConnectedList(ProcessId p) {
+		this.connectedReplicas.remove(p);
+	}
+	public void addToConnectedList(ProcessId p) {
+		this.connectedReplicas.add(p);
+	}
+	public void setTimeStamp(long t) {
+		timeStamp = (long)t;
+	}
 	@Override
 	void body() {
-		long timeStamp = 0; 
+		
 		if (isPrimary) {
 			writer.println("I am primary");
 			for (;;) {
@@ -113,7 +128,7 @@ public class Replica extends Process {
 							commitReq.senderCommitNumber = this.commitSeq;
 							sendMessage(primary, commitReq);
 						}
-						for (ProcessId replica : replicas) {
+						for (ProcessId replica : connectedReplicas) {
 							if (this.me.equals(replica)) 
 								continue;
 							AntiEntropy ae = new AntiEntropy(this.env, new ProcessId(this.me+":antiEntropy"+replica),this.me, replica, ops, commitedOps,
@@ -221,6 +236,50 @@ public class Replica extends Process {
 					writer.println("###########################");
 					System.out.println(commitedPlayList.toString());
 					writer.flush();
+				} else if(msg instanceof CreationMessage) {
+					int indexOfReplica = ((CreationMessage) msg).indexOfReplica;
+					ProcessId ret = new ProcessId("replica:"+timeStamp.toString()+":"+this.me);
+					System.out.println(this.me + ": Received creation write for replica:"+indexOfReplica+"with ID:"+ret.toString());
+					replicas.add(ret);
+					connectedReplicas.add(ret);
+					env.replicas.add(ret);
+					env.addIdToProc(indexOfReplica, ret);
+					Replica repl = new Replica(env, ret, primary);
+					repl.setTimeStamp(timeStamp+1);
+					repl.setReplicas(replicas);
+					List<ProcessId> list = new ArrayList<ProcessId>();
+					list.add(me);
+					list.add(ret);
+					repl.setConnectedList(list);
+					//Need to append to write log
+					PlayListOperation op = new PlayListOperation();
+					op.op = PlayListOperation.OperationTypes.CREATE.value();
+					op.execServer = this.me;
+					op.execStamp = timeStamp;
+					ops.add(op);
+					//TODO: need to ensure this write is executed..
+					//TODO: do we need to put in version vector??
+					//versionVector.put(ret, timeStamp);
+					System.out.println(this.me + " got to know about, replica:"+indexOfReplica+"with ID:"+ret.toString());
+					timeStamp++;
+				} else if(msg instanceof RetirementMessage) { 
+					/*I am supposed to retire*/
+					System.out.println(this.me+" will be retiring...");
+					int neigh = ((RetirementMessage) msg).neigh;
+					ProcessId nhbr = env.idToProc.get(neigh);
+					System.out.println("Perform Anti-entropy with:"+nhbr.toString());
+					PlayListOperation op = new PlayListOperation();
+					op.op = PlayListOperation.OperationTypes.RETIRE.value();
+					op.execServer = this.me;
+					op.execStamp = timeStamp;
+					ops.add(op);
+					AntiEntropy ae = new AntiEntropy(this.env, new ProcessId(this.me+":antiEntropy"+nhbr),this.me, nhbr, ops, commitedOps,
+							this.commitSeq);
+					timeStamp++;
+				} else if(msg instanceof BreakConnectionMessage) {
+					connectedReplicas.remove(env.idToProc.get(((BreakConnectionMessage) msg).getNeigh()));
+				} else if(msg instanceof RecoverConnectionMessage) {
+					connectedReplicas.add(env.idToProc.get(((RecoverConnectionMessage) msg).getNeigh()));
 				}
 			}
 		}
