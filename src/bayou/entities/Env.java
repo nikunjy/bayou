@@ -13,8 +13,9 @@ public class Env {
 	Map<ProcessId, Process> procs = new HashMap<ProcessId, Process>();
 	Map<Integer,ProcessId> idToProc = new HashMap<Integer, ProcessId>();
 	List<ProcessId> replicas;
+	Map<Integer, ProcessId> clientToProc = new HashMap<Integer, ProcessId>();
 	ProcessId primary;
-	public static int nReplicas = 4;
+	public static int nReplicas = 2;
 	private int numClients;
 	class BlackList {
 		String process1; 
@@ -96,8 +97,8 @@ public class Env {
 	public enum UserCommandTypes {
 		PRINTLOG("printLog:"),INITENTROPY("initEntropy:"),PRINTALL("printAll:"),ISOLATE("isolate:"),
 		RECONNECT("reconnect:"),PAUSE("pause:"),RESUME("resume:"),KILLPROCESS("killProcess:"),
-		DELPARTITION("deletePartition:"),ADDBLACKLIST("add:"),COMMAND("command:"),JOIN("join"),LEAVE("leave"),
-		BREAK("break"),RECOVER("recover");
+		DELPARTITION("deletePartition:"),ADDBLACKLIST("add:"),COMMAND("command:"),JOIN("join:"),LEAVE("leave:"),
+		BREAK("break:"),RECOVER("recover:"),ENTROPY("entropy"),CLIENT("client:");
 		public String message;
 		public String value() { 
 			return message;
@@ -128,7 +129,7 @@ public class Env {
 							int replicaId = Integer.parseInt(subs[0]);
 							int printLogLevel = Integer.parseInt(subs[1]);
 							PrintLogRequestMessage logMessage = new PrintLogRequestMessage(printLogLevel); 
-							sendMessage(replicas.get(replicaId), logMessage);
+							sendMessage(env.idToProc.get(replicaId), logMessage);
 						} else if (type.equals(UserCommandTypes.PRINTALL)) { 
 							int logLevel = Integer.parseInt(input.substring(input.indexOf(":")+1));
 							for (ProcessId replica : replicas) {
@@ -138,27 +139,28 @@ public class Env {
 						} else if (type.equals(UserCommandTypes.INITENTROPY)) {
 							String s = input.substring(input.indexOf(":")+1);
 							String[] subs = s.split(",");
-							ProcessId sender = replicas.get(Integer.parseInt(subs[0]));
-							ProcessId receiver = replicas.get(Integer.parseInt(subs[1]));
+							ProcessId sender = idToProc.get(Integer.parseInt(subs[0]));
+							ProcessId receiver = idToProc.get(Integer.parseInt(subs[1]));
 							UserEntropyInitMessage initRequest = new UserEntropyInitMessage(receiver);
 							initRequest.dest = sender;
 							sendMessage(sender, initRequest);
 						} else if (type.equals(UserCommandTypes.ISOLATE)) {
 							int replicaId = Integer.parseInt(input.substring(input.indexOf(":")+1));
-							isolatedNodes.add(replicas.get(replicaId));
+							isolatedNodes.add(idToProc.get(replicaId));
 						} else if (type.equals(UserCommandTypes.RECONNECT)) {
 							int replicaId = Integer.parseInt(input.substring(input.indexOf(":")+1));
-							isolatedNodes.remove(replicas.get(replicaId));
+							isolatedNodes.remove(idToProc.get(replicaId));
 						} else if (type.equals(UserCommandTypes.PAUSE)) {						
 							String s = input.substring(input.indexOf(":")+1);
 							if (s.isEmpty() || s.equals(" ")) {
+								System.out.println("Pausing all processes..");
 								for (ProcessId id : procs.keySet()) { 
 									if (!id.equals(this.me)) {
 										procs.get(id).suspend();
 									}
 								}
 							} else { 
-								ProcessId replica = replicas.get(Integer.parseInt(s));
+								ProcessId replica = idToProc.get(Integer.parseInt(s));
 								procs.get(replica).wait();
 							}
 						} else if (type.equals(UserCommandTypes.RESUME)) { 
@@ -170,7 +172,7 @@ public class Env {
 									}
 								}
 							} else { 
-								ProcessId replica = replicas.get(Integer.parseInt(s));
+								ProcessId replica = idToProc.get(Integer.parseInt(s));
 								procs.get(replica).notify();
 							}
 						} else if (type.equals(UserCommandTypes.KILLPROCESS)) {
@@ -213,13 +215,15 @@ public class Env {
 							String[] subs = s.split(",");
 							int src = Integer.parseInt(subs[0]);
 							int dst = Integer.parseInt(subs[1]);
+							System.out.println("Breaking connection between: "+src+" and "+dst);
 							BreakConnectionMessage msg = new BreakConnectionMessage();
 							msg.setNeigh(dst);
 							ProcessId receiver = idToProc.get(src);
 							sendMessage(receiver, msg);
+							BreakConnectionMessage msg1 = new BreakConnectionMessage();
 							receiver = idToProc.get(dst);
-							msg.setNeigh(src);
-							sendMessage(receiver,msg);							
+							msg1.setNeigh(src);
+							sendMessage(receiver,msg1);							
 						} else if (type.equals(UserCommandTypes.RECOVER)) {
 							String s = input.substring(input.indexOf(":")+1);
 							String[] subs = s.split(",");
@@ -229,9 +233,20 @@ public class Env {
 							msg.setNeigh(dst);
 							ProcessId receiver = idToProc.get(src);
 							sendMessage(receiver, msg);
+							RecoverConnectionMessage msg1 = new RecoverConnectionMessage();
 							receiver = idToProc.get(dst);
-							msg.setNeigh(src);
-							sendMessage(receiver,msg);
+							msg1.setNeigh(src);
+							sendMessage(receiver,msg1);
+						} else if (type.equals(UserCommandTypes.CLIENT)) {
+							String s = input.substring(input.indexOf(":")+1);
+							String[] subs = s.split(";");
+							int id = Integer.parseInt(subs[0]);
+							if(clientToProc.containsKey(id)) {
+								ProcessId clientId = clientToProc.get(id);
+								ClientMessage msg = new ClientMessage();
+								msg.setQuery(subs[1]);
+								sendMessage(clientId,msg);
+							}
 						}
 					}
 				}
@@ -241,7 +256,7 @@ public class Env {
 			}
 		}
 	}
-	class Client extends Process {
+	/*class Client extends Process {
 		public ProcessId pid;
 		public int clientId;
 		public Client(Env env,ProcessId pid, int clientId) {
@@ -271,7 +286,7 @@ public class Env {
 			}finally {
 			}
 		}
-	};
+	};*/
 	void run(String[] args){
 		replicas = new ArrayList<ProcessId>();
 		primary = new ProcessId("primary-replica");
@@ -287,6 +302,7 @@ public class Env {
 		//connectedList.add(primary);
 		/*Initially, everyone is connected to everyone else*/
 		Replica primaryReplica = new Replica(this, primary, primary);
+		primaryReplica.setReplicas(replicas);
 		primaryReplica.setConnectedList(connectedList);
 		
 		for (int i = 1; i <= nReplicas; i++) {
@@ -297,6 +313,7 @@ public class Env {
 		if (numClients == 1) {
 			for (int i = 1; i < 3; i++) {
 				ProcessId pid = new ProcessId("client:" + i);
+				clientToProc.put(i, pid);
 				PlayListOperation op = new PlayListOperation();
 				op.op = PlayListOperation.OperationTypes.ADD.value();
 				op.name = "Blah"+i;
@@ -308,9 +325,9 @@ public class Env {
 		} else { 
 			for (int i = 1; i <= numClients ; i++) { 
 				ProcessId pid = new ProcessId("client:" + i);
+				clientToProc.put(i, pid);
 				System.out.println("starting client"+i);
-				Client c = new Client(this,pid,i); 
-				//((Thread)c).start();
+				Client c = new Client(this,pid,i,i); //Assigning client 'i' to replica 'i'
 			}
 		}
 		UserReader ucmd = new UserReader(this,new ProcessId("usercmd:"));
@@ -321,7 +338,7 @@ public class Env {
 		if (args.length>0) { 
 			obj.numClients = Integer.parseInt(args[0]);
 		} else { 
-			obj.numClients = 1;
+			obj.numClients = 2;
 		}
 		obj.run(args);
 	}

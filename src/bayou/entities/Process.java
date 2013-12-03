@@ -11,8 +11,11 @@ public abstract class Process extends Thread {
 		body();
 		env.removeProc(me);
 	}
-	BayouMessage getNextMessage(){
+	BayouMessage getNextMessageWait() {
 		return inbox.bdequeue();
+	}
+	BayouMessage getNextMessage(){
+		return inbox.bdequeue(2000);
 	}
 	BayouMessage getPingMessage(long timeOut) { 
 		return inbox.bdequeue(timeOut);

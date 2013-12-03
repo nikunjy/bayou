@@ -164,3 +164,20 @@ class RecoverConnectionMessage extends BayouMessage {
 		return this.neighbour;
 	}
 }
+class ClientMessage extends BayouMessage {
+	String query;
+	public ClientMessage() {
+		super();
+	}
+	public void setQuery(String q) {
+		query = q;
+	}
+	public String getQuery() {
+		return query;
+	}
+}
+class EntropyMessage extends BayouMessage {
+	public EntropyMessage() {
+		super();
+	}
+}

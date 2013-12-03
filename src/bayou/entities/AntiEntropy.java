@@ -39,14 +39,14 @@ public class AntiEntropy extends Process {
 		//System.out.println("Sending anti entropy from "+this.me+" "+receiver);
 		sendMessage(receiver, initMessage);
 		
-		BayouMessage msg = getNextMessage();
+		BayouMessage msg = getNextMessageWait();
 		EntropyRequestMessage message = (EntropyRequestMessage)msg;
 		Map<ProcessId, Long> versionVector = message.versionVector;
 		if (msg instanceof EntropyRequestMessage) {
 			EntropyRequestMessage entropyMessage = ((EntropyRequestMessage) msg);
-			System.out.println("Doing anti entropy "+this.me+" with "+msg.src + " "+entropyMessage.commitSeq +" "+this.commitSeq);
+			//System.out.println("Doing anti entropy "+this.me+" with "+msg.src + " "+entropyMessage.commitSeq +" "+this.commitSeq);
 			for ( PlayListOperation op : ops) { 
-				System.out.println(this.me+" "+op.serialize());
+				//System.out.println(this.me+" "+op.serialize());
 			}
 			if (entropyMessage.commitSeq < this.commitSeq) { 
 				Map<Long, PlayListOperation> sortedCommits = new TreeMap<Long, PlayListOperation>();
@@ -66,6 +66,7 @@ public class AntiEntropy extends Process {
 							commitMessage.src = this.me; 
 							commitMessage.dest = msg.src;
 							commitMessage.commitNumber = key;
+							//System.out.println("Sending commit response message to:"+commitMessage.dest+"from: "+senderReplica+" Op is: "+sortedCommits.get(key).serialize());
 							sendMessage(msg.src, commitMessage);
 						/*} else  {
 							EntropyResponseMessage resp = new EntropyResponseMessage(); 

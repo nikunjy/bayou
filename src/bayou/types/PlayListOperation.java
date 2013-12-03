@@ -47,11 +47,14 @@ public class PlayListOperation {
 			playList.removeSong(name);
 		} else if (op.equalsIgnoreCase(OperationTypes.EDIT.value())) {
 			playList.editSong(name, url);
-		} else if (op.equalsIgnoreCase(OperationTypes.CREATE.value())) {
+		} else if(op.equalsIgnoreCase(OperationTypes.QUERY.value())) {
+			System.out.println(playList.getSong(name));
+	    } else if (op.equalsIgnoreCase(OperationTypes.CREATE.value())) {
 			
 	    } else { 
 			
 		}
+		
 	}
 	//TODO: needs to be changed to handle CREATE & RETIRE ?
 	public boolean isWriteOp() { 

@@ -33,6 +33,17 @@ public class PlayList {
 			}
 		}
 	}
+	public String getSong(String name) {
+		Iterator<Song> it = songs.iterator();
+		while(it.hasNext()) { 
+			Song song = it.next(); 
+			if (song.name.equalsIgnoreCase(name))  {
+				return song.url;
+				
+			}
+		}
+		return "";
+	}
 	public String toString() { 
 		String ret = "";
 		for (Song song : songs) { 
