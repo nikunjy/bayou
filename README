@@ -1,0 +1,39 @@
+README:
+
+Initially, client 'i' is connected to replica 'i', ensure that both are present in the system
+
+Client commands as follows:
+
+To add/edit/delete songs:
+
+client:1;add:song,url
+client:1;edit:song,url
+client:1;delete:song
+
+To attach to a different replica:
+
+client:1;attach:2 //will get attached to replica '2'
+
+To print log of replica 'i':
+
+printLog:i,3
+
+To print all logs:
+
+printAll:3
+
+To break connection between replica 'i' and 'j':
+
+break:i,j
+
+To reconnect:
+
+recover:i,j
+
+To join a new replica 'i' which will send its creation write to 'j':
+
+join:i,j
+
+To retire a replica 'i' who will perform anti-entropy with 'j':
+
+leave:i,j
